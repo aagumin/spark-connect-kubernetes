@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: executor-pod-template
+  labels:
+    {{- include "spark.labels" . | nindent 4 }}
+data:
+  executor-pod-template.yaml.template: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: spark-connect-kubernetes-executor
+      labels:
+        app.kubernetes.io/instance: {{ include "spark.name" . }}-executor
+        spark-role: executor
+        {{- with .Values.spark.executor.labels }}
+        {{- toYaml . | nindent 16 }}
+        {{- end }}
+    spec:
+      {{- with .Values.image.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+      {{- with .Values.spark.executor.ephemeralLocalVolume }}
+      volumes:
+        - name: "spark-local-dir-{{ .name }}"
+          ephemeral:
+            volumeClaimTemplate:
+              metadata:
+                labels:
+                  type: ephemeral
+                  storageClass: {{ .storageClass }}
+              spec:
+                accessModes: [ "ReadWriteOnce" ]
+                storageClassName: {{ .storageClass | quote }}
+                resources:
+                  requests:
+                    storage: "{{ .storageGiB }}Gi"
+      {{- end }}
+      containers:
+        - name: spark-kubernetes-executor
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: IfNotPresent
+          env:
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            - name: SPARK_EXECUTOR_POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: SPARK_EXECUTOR_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          {{- with .Values.spark.executor.ephemeralLocalVolume }}
+          volumeMounts:
+            - name: "spark-local-dir-{{ .name }}"
+              mountPath: {{ $.Values.spark.scratchDir }}
+          {{- end }}
+      {{- with .Values.spark.executor.affinity }}
+      affinity:
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.spark.executor.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
