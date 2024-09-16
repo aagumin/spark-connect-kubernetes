@@ -82,3 +82,17 @@ jobs:
           git add index.yaml
           git commit -s -m "Add index for Spark connect chart ${VERSION}" || exit 0
           git push
+      
+
+      - name: Release
+        id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: "Spark connect ${{ env.VERSION }}"
+          tag_name: ${{ env.VERSION }}
+          prerelease: ${{ contains(env.VERSION, 'rc') }}
+          target_commitish: ${{ github.sha }}
+          draft: true
+          files: |
+            *.tgz

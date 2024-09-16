@@ -1,6 +1,6 @@
 ### Helm template
 # Chart dependencies
-**/charts/*.tgz
+# **/charts/*.tgz
 
 ### Python template
 # Byte-compiled / optimized / DLL files
