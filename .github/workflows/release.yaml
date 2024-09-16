@@ -3,7 +3,7 @@ name: Check Release
 on:
   release:
     types: [ published, created]
-    ref_name: ${{ github.ref_name }}
+    ref_name: ${{ GITHUB_REF_NAME }}
     ref_type: tag
 
 concurrency:
