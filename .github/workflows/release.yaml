@@ -2,7 +2,7 @@ name: Check Release
 
 on:
   release:
-    types: [ published, created ]
+    types: [created]
 
 
 concurrency:
