@@ -8,7 +8,7 @@ RUN  apt-get update -y && \
 ENV SPARK_HOME /opt/spark
 WORKDIR /opt
 
-COPY spark/3.5.2/pom.xml .
+COPY docker/pom.xml .
 
 RUN mvn validate
 
@@ -16,7 +16,7 @@ RUN mvn install
 
 RUN mvn dependency:copy-dependencies package
 
-COPY spark/3.5.2/requirements.txt .
+COPY docker/requirements.txt .
 
 RUN pip install -r requirements.txt
 
