@@ -15,7 +15,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   HELM_REGISTRY: ghcr.io
   HELM_REPOSITORY: ${{ github.repository_owner }}/helm-charts
-  RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+  RELEASE_VERSION: ${{ github.ref_name }}
 
 jobs:
   check:
@@ -27,7 +27,6 @@ jobs:
           fetch-depth: 0
 
       - name: Check whether version matches semver pattern
-
         run: |
           VERSION=${{ env.RELEASE_VERSION }}
           if [[ ${VERSION} =~ ${{ env.SEMVER_PATTERN }} ]]; then
