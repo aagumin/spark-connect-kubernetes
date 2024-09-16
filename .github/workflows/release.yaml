@@ -1,9 +1,9 @@
 name: Check Release
 
 on:
-  release:
-    types: [created]
-
+  push:
+    tags:
+      - "*.*.*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -11,8 +11,11 @@ concurrency:
 
 env:
   SEMVER_PATTERN: '^v([0-9]+)\.([0-9]+)\.([0-9]+)(-rc\.([0-9]+))?$'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
   HELM_REGISTRY: ghcr.io
   HELM_REPOSITORY: ${{ github.repository_owner }}/helm-charts
+  RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
 
 jobs:
   check:
@@ -25,8 +28,10 @@ jobs:
           fetch-depth: 0
 
       - name: Check whether version matches semver pattern
+        env:
+
         run: |
-          VERSION=$(cat VERSION)
+          VERSION=$RELEASE_VERSION
           if [[ ${VERSION} =~ ${{ env.SEMVER_PATTERN }} ]]; then
             echo "Version '${VERSION}' matches semver pattern."
           else
@@ -37,7 +42,7 @@ jobs:
 
       - name: Check whether chart version and appVersion matches version
         run: |
-          VERSION=${VERSION#v}
+          VERSION=${RELEASE_VERSION}
           CHART_VERSION=$(cat charts/spark-connect/Chart.yaml | grep version | awk '{print $2}')
           CHART_APP_VERSION=$(cat charts/spark-connect/Chart.yaml | grep appVersion | awk '{print $2}')
           if [[ ${CHART_VERSION} == ${VERSION} ]]; then
@@ -57,12 +62,69 @@ jobs:
         run: |
           git fetch --tags
           if git tag -l | grep -q "^${VERSION}$"; then
-            echo "Tag '${VERSION}' already exists."
+            echo "Tag '${RELEASE_VERSION}' already exists."
             exit 1
           else
-            echo "Tag '${VERSION}' does not exist."
+            echo "Tag '${RELEASE_VERSION}' does not exist."
           fi
-          
+
+  build-publish:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
+        with:
+          cosign-release: 'v2.2.4'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
+        with:
+          context: "{{defaultContext}}:docker"
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Sign the published Docker image
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
   release_helm_charts:
     permissions:
@@ -94,8 +156,7 @@ jobs:
 
       - name: Read version from VERSION file
         run: |
-          VERSION=$(cat VERSION)
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
 
       - name: Package Helm charts
         run: |

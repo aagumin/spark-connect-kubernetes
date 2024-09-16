@@ -1,10 +1,9 @@
 name: Docker Image CI
 
 on:
-  release:
-    types: [ created ]
   pull_request:
     branches: [ "main" ]
+    paths: [ "docker/*" ]
 
 env:
   REGISTRY: ghcr.io
@@ -14,7 +13,6 @@ env:
 jobs:
 
   build-publish:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
