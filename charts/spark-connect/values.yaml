@@ -1,8 +1,8 @@
 replicaCount: 1
 
 image:
-  repository: spark-connect
-  tag: 3.5.2
+  repository: ghrc.io/aagumin/spark-connect-kubernetes
+  tag: 1.0.0
   pullPolicy: Always
   imagePullSecrets: []
 
