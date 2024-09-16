@@ -20,7 +20,6 @@ env:
 jobs:
   check:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -28,10 +27,9 @@ jobs:
           fetch-depth: 0
 
       - name: Check whether version matches semver pattern
-        env:
 
         run: |
-          VERSION=$RELEASE_VERSION
+          VERSION=${{ env.RELEASE_VERSION }}
           if [[ ${VERSION} =~ ${{ env.SEMVER_PATTERN }} ]]; then
             echo "Version '${VERSION}' matches semver pattern."
           else
@@ -42,7 +40,7 @@ jobs:
 
       - name: Check whether chart version and appVersion matches version
         run: |
-          VERSION=${RELEASE_VERSION}
+          VERSION=${{ env.RELEASE_VERSION }}
           CHART_VERSION=$(cat charts/spark-connect/Chart.yaml | grep version | awk '{print $2}')
           CHART_APP_VERSION=$(cat charts/spark-connect/Chart.yaml | grep appVersion | awk '{print $2}')
           if [[ ${CHART_VERSION} == ${VERSION} ]]; then
@@ -62,10 +60,10 @@ jobs:
         run: |
           git fetch --tags
           if git tag -l | grep -q "^${VERSION}$"; then
-            echo "Tag '${RELEASE_VERSION}' already exists."
+            echo "Tag '${{ env.RELEASE_VERSION }}' already exists."
             exit 1
           else
-            echo "Tag '${RELEASE_VERSION}' does not exist."
+            echo "Tag '${{ env.RELEASE_VERSION }}' does not exist."
           fi
 
   build-publish:
@@ -156,7 +154,7 @@ jobs:
 
       - name: Read version from VERSION file
         run: |
-          echo "VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
+          echo "VERSION=${{ env.RELEASE_VERSION }}" >> $GITHUB_ENV
 
       - name: Package Helm charts
         run: |
