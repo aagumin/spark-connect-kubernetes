@@ -42,7 +42,10 @@ spark:
   sparkConfig:
     spark.hadoop.parquet.block.size: "33554432"
     spark.driver.maxResultSize: 4g
-  hiveMetastoreConfigMap: spark-connect-hive
+
+  catalog:
+    enabled: true
+    hiveMetastoreConfigMap: spark-connect-hive
 
 serviceAccount:
   create: true

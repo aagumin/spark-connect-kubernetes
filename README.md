@@ -6,6 +6,13 @@ This Helm chart is designed for deploying the Spark Connect application.
 
 Spark Connect is an application that allows you to perform data processing tasks using Apache Spark.
 
+### Feature
+
+- [X] Dynamic package list
+- [ ] Optional mTLS.
+- [ ] Istio support
+- [ ] Celeborn in box
+
 ## Requirements
 
 - Kubernetes 1.16.0 or later
@@ -28,5 +35,5 @@ helm repo update
 
 4. Install the Spark Connect Helm chart:
 ```sh
-helm install [RELEASE_NAME] spark-connect-kubernetes/spark-connect-kubernetes
+helm install [RELEASE_NAME] spark-connect-kubernetes/spark-connect
 ```

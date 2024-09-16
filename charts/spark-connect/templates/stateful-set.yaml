@@ -46,12 +46,14 @@ spec:
             items:
               - key: spark-properties.conf.template
                 path: spark-properties.conf.template
+        {{- if .Values.spark.catalog.enabled }}
         - name: hive-site
           configMap:
             name: {{ .Values.spark.hiveMetastoreConfigMap }}
             items:
               - key: hive-site.xml
                 path: hive-site.xml
+        {{- end }}
         {{- with .Values.spark.driver.ephemeralLocalVolume }}
         - name: "spark-local-dir-{{ .name }}"
           ephemeral:
@@ -150,9 +152,11 @@ spec:
             - name: spark-properties
               mountPath: /opt/spark/conf/spark-properties.conf.template
               subPath: spark-properties.conf.template
+            {{- if.Values.spark.catalog.enabled }}
             - name: hive-site
               mountPath: /opt/spark/conf/hive-site.xml
               subPath: hive-site.xml
+            {{ end }}
             {{- with .Values.spark.driver.ephemeralLocalVolume }}
             - name: "spark-local-dir-{{ .name }}"
               mountPath: {{ $.Values.spark.scratchDir }}

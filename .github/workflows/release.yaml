@@ -1,4 +1,4 @@
-name: Check Release
+name: Release Helm Chart and Docker Image
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
             echo "Tag '${{ env.RELEASE_VERSION }}' does not exist."
           fi
 
-  build-publish:
+  docker-build-publish:
     needs: [check]
     runs-on: ubuntu-latest
     permissions:
@@ -130,7 +130,7 @@ jobs:
       - name: Package Helm charts
         run: |
           for chart in $(ls charts); do
-            helm package charts/${chart} --version ${RELEASE_VERSION} --app-version ${RELEASE_VERSION}
+            helm package charts/${chart} --version ${RELEASE_VERSION}
           done
 
       - name: Upload charts to GHCR
