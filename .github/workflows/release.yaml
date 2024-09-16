@@ -2,9 +2,8 @@ name: Check Release
 
 on:
   release:
-    types: [ published, created]
-    ref_name: ${{ GITHUB_REF_NAME }}
-    ref_type: tag
+    types: [ published, created ]
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
