@@ -1,5 +1,7 @@
 # Helm Chart Spark Connect
 
+[![Release Helm Chart and Docker Image](https://github.com/aagumin/spark-connect-kubernetes/actions/workflows/release.yaml/badge.svg)](https://github.com/aagumin/spark-connect-kubernetes/actions/workflows/release.yaml)
+
 This Helm chart is designed for deploying the Spark Connect application.
 
 ## Description
