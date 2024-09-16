@@ -29,10 +29,6 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: add repos
-        run: |
-          helm registry login ghcr.io/trstringer --username $GITHUB_ACTOR --password $GITHUB_TOKEN
-
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
         with:
