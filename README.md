@@ -17,7 +17,7 @@ Spark Connect is an application that allows you to perform data processing tasks
 2. Add the Helm repository for your project:
 
 ```sh
-helm repo add spark-connect https://your-helm-repo-url
+helm repo add spark-connect-kubernetes https://aagumin.github.io/spark-connect-kubernetes
 ```
 
 3. Update the Helm repository list:
@@ -28,5 +28,5 @@ helm repo update
 
 4. Install the Spark Connect Helm chart:
 ```sh
-helm install spark-connect spark-connect/spark-connect
+helm install [RELEASE_NAME] spark-connect-kubernetes/spark-connect-kubernetes
 ```
