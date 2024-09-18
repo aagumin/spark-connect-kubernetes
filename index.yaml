@@ -16,6 +16,19 @@ entries:
     version: 1.2.0
   - apiVersion: v2
     appVersion: 3.5.0
+    created: "2024-09-18T16:40:26.406642895Z"
+    description: A Helm chart for deploying a Spark-Connect Server on Kubernetes
+    digest: 708934f3cd9b5af1c77a3e5558a7c20c8858222f7ef28d81e0a038e6c94dfb2a
+    maintainers:
+    - email: gumin@live.ru
+      name: Arsen Gumin
+    name: spark-connect
+    type: application
+    urls:
+    - https://github.com/aagumin/spark-connect-kubernetes/releases/download/1.1.0/spark-connect-1.1.0.tgz
+    version: 1.1.0
+  - apiVersion: v2
+    appVersion: 3.5.0
     created: "2024-09-16T19:39:58.207098076Z"
     description: A Helm chart for deploying a Spark-Connect Server on Kubernetes
     digest: 038dfe18449ec317c48c2b93f49c8100a00878b83ffc983753cdc39d31d17b4e
@@ -27,4 +40,4 @@ entries:
     urls:
     - https://github.com/aagumin/spark-connect-kubernetes/releases/download/1.0.0/spark-connect-1.0.0.tgz
     version: 1.0.0
-generated: "2024-09-16T19:39:58.205772079Z"
+generated: "2024-09-18T16:40:26.405909518Z"
