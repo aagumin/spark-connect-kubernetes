@@ -45,6 +45,9 @@ data:
     spark.ui.retainedDeadExecutors 10
     {{- if .Values.spark.celeborn.enabled }}
     spark.celeborn.master.endpoints  {{ .Values.spark.celeborn.masterEndpoints }}
+    spark.shuffle.manager: org.apache.spark.shuffle.celeborn.SparkShuffleManager
+    spark.shuffle.service.enabled false
+    spark.executor.userClassPathFirst: false
     spark.celeborn.client.spark.shuffle.writer hash
     spark.celeborn.client.push.replicate.enabled true
     spark.sql.adaptive.localShuffleReader.enabled false
