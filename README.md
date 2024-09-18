@@ -8,10 +8,11 @@ Spark Connect is an application that allows you to perform data processing tasks
 
 ### Feature
 
-- [X] Dynamic package list
+- [X] Apache Spark >= 3.5
+- [X] Dynamic package installation
+- [X] Apache Celeborn support
 - [ ] Optional mTLS.
 - [ ] Istio support
-- [ ] Celeborn in box
 
 ## Requirements
 
@@ -34,6 +35,7 @@ helm repo update
 ```
 
 4. Install the Spark Connect Helm chart:
+
 ```sh
 helm install [RELEASE_NAME] spark-connect-kubernetes/spark-connect
 ```
