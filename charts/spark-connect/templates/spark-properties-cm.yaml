@@ -13,18 +13,8 @@ data:
     spark.driver.host ${SPARK_DRIVER_HOST}
     spark.driver.memory {{ .Values.spark.driver.memoryMiB }}m
     spark.driver.memoryOverhead {{ .Values.spark.driver.memoryOverheadMiB }}m
-    spark.dynamicAllocation.cachedExecutorIdleTimeout 600s
-    spark.dynamicAllocation.enabled true
-    spark.dynamicAllocation.executorAllocationRatio	1
-    spark.dynamicAllocation.executorIdleTimeout	300s
-    spark.dynamicAllocation.maxExecutors {{ .Values.spark.executor.maxExecutors }}
-    spark.dynamicAllocation.minExecutors {{ .Values.spark.executor.minExecutors }}
-    spark.dynamicAllocation.schedulerBacklogTimeout	1s
-    spark.dynamicAllocation.shuffleTracking.enabled	true
-    spark.dynamicAllocation.shuffleTracking.timeout	600s
-    spark.dynamicAllocation.sustainedSchedulerBacklogTimeout 5s
-    spark.eventLog.enabled {{ .Values.spark.eventLog.enabled }}
     {{- if .Values.spark.eventLog.enabled }}
+    spark.eventLog.enabled true
     spark.eventLog.compress true
     spark.eventLog.compression.codecs zstd
     spark.eventLog.dir {{ .Values.spark.eventLog.dir }}
@@ -40,18 +30,6 @@ data:
     {{- with .Values.spark.packages }}
     spark.jars.packages {{ join "," . }}
     {{- end }}
-    spark.kubernetes.allocation.driver.readinessTimeout 60s
-    spark.kubernetes.authenticate.driver.serviceAccountName {{ include "spark.serviceAccountName" .  }}
-    spark.kubernetes.authenticate.executor.serviceAccountName {{ include "spark.serviceAccountName" .  }}
-    spark.kubernetes.authenticate.submission.caCertFile /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-    spark.kubernetes.authenticate.submission.oauthTokenFile /var/run/secrets/kubernetes.io/serviceaccount/token
-    spark.kubernetes.container.image.pullPolicy {{ .Values.image.pullPolicy }}
-    spark.kubernetes.driver.pod.name ${SPARK_DRIVER_POD_NAME}
-    spark.kubernetes.executor.container.image {{ .Values.image.repository }}:{{ .Values.image.tag }}
-    spark.kubernetes.executor.podTemplateFile /opt/spark/executor-pod-template.yaml
-    spark.kubernetes.executor.request.cores {{ .Values.spark.executor.requestCoresMilliCPU }}m
-    spark.kubernetes.local.dirs.tmpfs false
-    spark.kubernetes.namespace {{ .Release.Namespace }}
     spark.local.dir {{ .Values.spark.scratchDir }}
     spark.master k8s://{{ .Values.spark.kubernetesEndpoint }}
     spark.network.timeout 300s
@@ -65,6 +43,42 @@ data:
     spark.sql.ui.retainedExecutions 100
     spark.streaming.ui.retainedBatches 100
     spark.ui.retainedDeadExecutors 10
+    {{- if .Values.spark.celeborn.enabled }}
+    spark.celeborn.master.endpoints  {{ .Values.spark.celeborn.masterEndpoints }}
+    spark.celeborn.client.spark.shuffle.writer hash
+    spark.celeborn.client.push.replicate.enabled true
+    spark.sql.adaptive.localShuffleReader.enabled false
+    spark.sql.adaptive.enabled true
+    spark.sql.adaptive.skewJoin.enabled true
+    spark.shuffle.sort.io.plugin.class org.apache.spark.shuffle.celeborn.CelebornShuffleDataIO
+    spark.dynamicAllocation.shuffleTracking.enabled false
+    {{- end }}
+    {{- if .Values.spark.dynamicAllocation.enabled }}
+    spark.dynamicAllocation.enabled true
+    spark.dynamicAllocation.cachedExecutorIdleTimeout 600s
+    spark.dynamicAllocation.executorAllocationRatio	1
+    spark.dynamicAllocation.executorIdleTimeout	300s
+    spark.dynamicAllocation.maxExecutors {{ .Values.spark.executor.maxExecutors }}
+    spark.dynamicAllocation.minExecutors {{ .Values.spark.executor.minExecutors }}
+    spark.dynamicAllocation.schedulerBacklogTimeout	1s
+    spark.dynamicAllocation.sustainedSchedulerBacklogTimeout 5s
+    {{- end }}
+    {{ if not .Values.spark.celeborn.enabled }}
+    spark.dynamicAllocation.shuffleTracking.enabled	true
+    spark.dynamicAllocation.shuffleTracking.timeout	600s
+    {{- end }}
+    spark.kubernetes.allocation.driver.readinessTimeout 60s
+    spark.kubernetes.authenticate.driver.serviceAccountName {{ include "spark.serviceAccountName" .  }}
+    spark.kubernetes.authenticate.executor.serviceAccountName {{ include "spark.serviceAccountName" .  }}
+    spark.kubernetes.authenticate.submission.caCertFile /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    spark.kubernetes.authenticate.submission.oauthTokenFile /var/run/secrets/kubernetes.io/serviceaccount/token
+    spark.kubernetes.container.image.pullPolicy {{ .Values.image.pullPolicy }}
+    spark.kubernetes.driver.pod.name ${SPARK_DRIVER_POD_NAME}
+    spark.kubernetes.executor.container.image {{ .Values.image.repository }}:{{ .Values.image.tag }}
+    spark.kubernetes.executor.podTemplateFile /opt/spark/executor-pod-template.yaml
+    spark.kubernetes.executor.request.cores {{ .Values.spark.executor.requestCoresMilliCPU }}m
+    spark.kubernetes.local.dirs.tmpfs false
+    spark.kubernetes.namespace {{ .Release.Namespace }}
     {{- with .Values.spark.sparkConfig }}
     {{- range $key, $value := . }}
     {{ printf "%s %s" $key (toString $value) }}

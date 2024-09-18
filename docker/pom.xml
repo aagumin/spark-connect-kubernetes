@@ -11,6 +11,12 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-connect_2.12</artifactId>
             <version>3.5.2</version>
+          </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.celeborn/celeborn-client-spark-3-shaded -->
+        <dependency>
+            <groupId>org.apache.celeborn</groupId>
+            <artifactId>celeborn-client-spark-3-shaded_2.12</artifactId>
+            <version>0.5.1</version>
         </dependency>
     </dependencies>
     <build>
