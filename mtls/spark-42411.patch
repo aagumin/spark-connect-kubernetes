@@ -1,36 +1,8 @@
-From e1f51475d1e031f58d32bb6075f021c1260f10f4 Mon Sep 17 00:00:00 2001
-From: Puneet Gupta <puneet.gupta2@workday.com>
-Date: Mon, 3 Apr 2023 15:15:58 -0700
-Subject: [PATCH] Support for Istio with Strict MTLS
-
----
- .../spark/internal/config/package.scala       |   5 +
- .../org/apache/spark/deploy/k8s/Config.scala  |  31 ++++
- .../apache/spark/deploy/k8s/Constants.scala   |   4 +
- .../spark/deploy/k8s/KubernetesConf.scala     |   5 +
- .../spark/deploy/k8s/KubernetesUtils.scala    |  48 +++++-
- .../k8s/features/BasicDriverFeatureStep.scala |  16 +-
- .../features/BasicExecutorFeatureStep.scala   |   9 +-
- .../features/DriverServiceFeatureStep.scala   |   5 +-
- .../features/ExecutorServiceFeatureStep.scala |  86 ++++++++++
- .../cluster/k8s/ExecutorPodsAllocator.scala   |  20 ++-
- .../k8s/KubernetesExecutorBuilder.scala       |  10 +-
- .../spark/deploy/k8s/KubernetesTestConf.scala |   7 +-
- .../BasicDriverFeatureStepSuite.scala         |  28 ++++
- .../BasicExecutorFeatureStepSuite.scala       |  30 ++++
- .../DriverServiceFeatureStepSuite.scala       |   6 +-
- .../ExecutorServiceFeatureStepSuite.scala     | 147 ++++++++++++++++++
- .../k8s/KubernetesExecutorBuilderSuite.scala  |  23 +++
- .../src/main/dockerfiles/spark/entrypoint.sh  |  13 +-
- 18 files changed, 465 insertions(+), 28 deletions(-)
- create mode 100644 resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStep.scala
- create mode 100644 resource-managers/kubernetes/core/src/test/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStepSuite.scala
-
 diff --git a/core/src/main/scala/org/apache/spark/internal/config/package.scala b/core/src/main/scala/org/apache/spark/internal/config/package.scala
-index 7f93bf7621644..ced677df3fb92 100644
+index 125025d6a2fdf..69f59b789262c 100644
 --- a/core/src/main/scala/org/apache/spark/internal/config/package.scala
 +++ b/core/src/main/scala/org/apache/spark/internal/config/package.scala
-@@ -1061,6 +1061,11 @@ package object config {
+@@ -1079,6 +1079,11 @@ package object config {
      .version("2.1.0")
      .fallbackConf(DRIVER_HOST_ADDRESS)
 
@@ -419,10 +391,10 @@ index 0000000000000..d9e037a7a0b37
 +  val MAX_SERVICE_NAME_LENGTH = 63
 +}
 diff --git a/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/scheduler/cluster/k8s/ExecutorPodsAllocator.scala b/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/scheduler/cluster/k8s/ExecutorPodsAllocator.scala
-index 7174ba95927e7..f2ec4e647e49b 100644
+index 25970e918ec42..9fb1202997470 100644
 --- a/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/scheduler/cluster/k8s/ExecutorPodsAllocator.scala
 +++ b/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/scheduler/cluster/k8s/ExecutorPodsAllocator.scala
-@@ -441,16 +441,20 @@ class ExecutorPodsAllocator(
+@@ -471,16 +471,20 @@ class ExecutorPodsAllocator(
        try {
          addOwnerReference(createdExecutorPod, resources)
          resources
