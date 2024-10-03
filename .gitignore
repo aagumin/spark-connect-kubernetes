@@ -166,3 +166,4 @@ cython_debug/
 
 # custom values file
 charts/values.yaml
+charts/values-*.yaml
