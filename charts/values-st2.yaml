@@ -1,0 +1,122 @@
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.amazmetest.ru/ml/sdk/base-images/spark-connect
+  tag: 3.5.2-celeborn-aws334
+  pullPolicy: Always
+  imagePullSecrets: 
+    - name: registry-credentials
+
+nameOverride: ""
+fullnameOverride: ""
+
+spark:
+  dynamicAllocation:
+    enabled: true
+
+
+  eventLog:
+    enabled: false
+    dir: ""
+
+  celeborn:
+    enabled: true
+    masterEndpoints: "celeborn-master-0.celeborn-master-svc.st-aagumin-test1-amazme-38969:9097"
+
+  awsEndpoint: ""
+  driver:
+    cores: 4
+    memoryMiB: 8096
+    memoryOverheadMiB: 384
+    ephemeralLocalVolume: {}
+    affinity:
+        nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                    -   matchExpressions:
+                            -   key: "app.kubernetes.io/component"
+                                operator: "In"
+                                values:
+                                    - "spark"
+    tolerations:
+      - key: "app"
+        operator: "Equal"
+        value: "spark"
+        effect: "NoExecute"
+
+  executor:
+    cores: 8
+    requestCoresMilliCPU: 4000
+    memoryMiB: 20480
+    memoryOverheadMiB: 5120
+    ephemeralLocalVolume: {}
+    minExecutors: 1
+    maxExecutors: 10
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+                -   matchExpressions:
+                        -   key: "app.kubernetes.io/component"
+                            operator: "In"
+                            values:
+                                - "spark"
+
+    tolerations:
+      - key: "app"
+        operator: "Equal"
+        value: "spark"
+        effect: "NoExecute"
+  scratchDir: /tmp
+  kubernetesEndpoint: "https://kubernetes.default.svc.cluster.local:443"
+  packages: []
+  sparkConfig:
+    spark.sql.execution.arrow.pyspark.enabled: true
+    spark.sql.execution.arrow.pyspark.fallback.enabled: true
+    spark.sql.files.maxPartitionBytes: 128MB
+    spark.serializer: org.apache.spark.serializer.KryoSerializer
+
+
+
+    # Support ShuffleManager when defined in user jars
+    # Required Spark version < 4.0.0 or without SPARK-45762, highly recommended to false for ShuffleManager in user-defined jar specified by --jars or spark.jars
+
+  catalog:
+    enabled: false
+    hiveMetastoreConfigMap: spark-connect-hive
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "spark-connect"
+  automountServiceAccountToken: true
+
+service:
+  # Specifies whether a service should be created
+  create: true
+  # Annotations to add to the service
+  annotations: {}
+  # The name of the service to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "spark-connect"
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext:
+  runAsUser: 185
+  runAsGroup: 185
+
+command: []
+extraArgs: []
+extraEnv: {}
+
+containerPorts:
+  sparkUi: 4040
+  sparkConnect: 15002

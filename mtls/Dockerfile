@@ -1,55 +1,48 @@
-# I want to build Spark with PySpark support for Python 3.10, so I need a docker image with both Python and Java.
-# It is faster to start from an image with Python and install the JDK later.
-FROM eclipse-temurin:11
+FROM eclipse-temurin:17
 
 ENV MAVEN_OPTS="-Xss64m -Xmx2g -XX:ReservedCodeCacheSize=1g"
-ENV SCALA_VERSION=2.12
+ENV SCALA_VERSION=2.13
 ENV SPARK_VERSION=3.5.3
 ENV SPARK_HOME=/opt/spark
-ENV HADOOP_VERSION=3.3.4
+ENV SPARK_TGZ_URL=https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}.tgz
+
 WORKDIR /opt
 
-# Install packages
-RUN apt-get update \
-    && apt-get install -y wget patch curl zip tini procps gettext-base \
-    && rm -rf /var/lib/apt/lists/*
+ARG spark_uid=185
+
+RUN groupadd --system --gid=${spark_uid} spark && \
+    useradd --system --uid=${spark_uid} --gid=spark spark
+
+RUN apt-get update; \
+    apt-get install -y wget patch gettext-base gnupg2 bash tini libc6 libpam-modules krb5-user libnss3 procps net-tools gosu libnss-wrapper; \
+    rm -rf /var/lib/apt/lists/*
 
 
-RUN wget -O /opt/spark.tar.gz https://github.com/apache/spark/archive/refs/tags/v${SPARK_VERSION}.tar.gz
-RUN mkdir -p $SPARK_HOME
-RUN tar zxf /opt/spark.tar.gz --strip-components=1 --directory=$SPARK_HOME
-RUN rm /opt/spark.tar.gz
+RUN set -ex; \
+    mkdir -p $SPARK_HOME; \
+    wget -nv -O /opt/spark.tgz "$SPARK_TGZ_URL"; \
+    tar -zxf /opt/spark.tgz --strip-components=1 --directory=$SPARK_HOME; \
+    chown -R spark:spark .;
 
-# Setting up Maven's Memory Usage
 
-# Patch (see: https://issues.apache.org/jira/browse/SPARK-45201) and build a runnable Spark distribution
-
-#
 WORKDIR $SPARK_HOME
 
-
 COPY mtls/spark-42411.patch .
-
 RUN patch -p1 < $SPARK_HOME/spark-42411.patch
 
-
-#RUN ./dev/change-scala-version.sh 2.13
+RUN ./dev/change-scala-version.sh ${SCALA_VERSION}
 RUN ./dev/make-distribution.sh \
       --name spark-mtls \
       --pip \
       -P"scala-${SCALA_VERSION}" \
       -Pconnect \
-      -Pkubernetes \
-      -Phive \
-      -Pparquet-provided \
-      -Porc-provided \
-      -Phive-thriftserver \
-      -Phadoop-3 \
-      -Phadoop-cloud \
-      -Dhadoop.version=${HADOOP_VERSION} \
-      -Dscala-maven-plugin.version=4.7.2
+      -Pkubernetes
 
+#      -Phive \
+#      -Phive-thriftserver \
+##
 #
+##
 ##
 ##
 ## IMPORTANT! We must delete the spark-connect-commom jar from the jars directory!
