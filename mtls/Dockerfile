@@ -1,8 +1,7 @@
 FROM eclipse-temurin:17
 
 ENV MAVEN_OPTS="-Xss64m -Xmx2g -XX:ReservedCodeCacheSize=1g"
-ENV SCALA_VERSION=2.13
-ENV SPARK_VERSION=3.5.3
+ENV SPARK_VERSION=4.0.0-preview2
 ENV SPARK_HOME=/opt/spark
 ENV SPARK_TGZ_URL=https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}.tgz
 
@@ -22,40 +21,37 @@ RUN set -ex; \
     mkdir -p $SPARK_HOME; \
     wget -nv -O /opt/spark.tgz "$SPARK_TGZ_URL"; \
     tar -zxf /opt/spark.tgz --strip-components=1 --directory=$SPARK_HOME; \
-    chown -R spark:spark .;
-
+    chown -R spark:spark .; \
+    rm /opt/spark.tgz
+    
 
 WORKDIR $SPARK_HOME
 
-COPY mtls/spark-42411.patch .
-RUN patch -p1 < $SPARK_HOME/spark-42411.patch
+COPY mtls/0001-feat-support-mtls-spark-4.0.0.patch .
+COPY mtls/0002-fix-convertors-deps-update.patch .
 
-RUN ./dev/change-scala-version.sh ${SCALA_VERSION}
+RUN patch -p1 < $SPARK_HOME/0001-feat-support-mtls-spark-4.0.0.patch 
+RUN patch -p1 < $SPARK_HOME/0002-fix-convertors-deps-update.patch
+
 RUN ./dev/make-distribution.sh \
       --name spark-mtls \
-      --pip \
-      -P"scala-${SCALA_VERSION}" \
       -Pconnect \
-      -Pkubernetes
+      -Pkubernetes \
+      -Phadoop-3 \
+      -Phadoop-cloud \
+      -Pparquet-provided \
+      -Phive \
+      -Phive-thriftserver
 
-#      -Phive \
-#      -Phive-thriftserver \
-##
-#
-##
-##
-##
 ## IMPORTANT! We must delete the spark-connect-commom jar from the jars directory!
 ## see: https://issues.apache.org/jira/browse/SPARK-45201
 #RUN rm "${SPARK_HOME}/jars/spark-connect-common_${SCALA_VERSION}-${SPARK_VERSION}.jar"
-#
-#COPY docker/pom.xml .
-#COPY docker/requirements.txt .
-#
-#RUN mvn validate
-##
-##RUN mvn install
-##
-##RUN mvn dependency:copy-dependencies package
-##
-##RUN pip install -r requirements.txt
+COPY docker/pom.xml .
+COPY docker/requirements.txt .
+RUN mvn validate
+
+RUN mvn install
+
+RUN mvn dependency:copy-dependencies package
+
+RUN pip install -r requirements.txt

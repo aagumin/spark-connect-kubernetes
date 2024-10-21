@@ -1,0 +1,25 @@
+From fc63bdcdef079e83517c7852759a49a98e4d6dbd Mon Sep 17 00:00:00 2001
+From: Arsen Gumin <60981750+aagumin@users.noreply.github.com>
+Date: Sat, 19 Oct 2024 00:37:43 +0300
+Subject: [PATCH 2/2] fix: convertors deps update
+
+---
+ .../spark/deploy/k8s/features/ExecutorServiceFeatureStep.scala  | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStep.scala b/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStep.scala
+index d9e037a7a0b..7060a4ac900 100644
+--- a/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStep.scala
++++ b/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStep.scala
+@@ -16,7 +16,7 @@
+  */
+ package org.apache.spark.deploy.k8s.features
+ 
+-import scala.collection.JavaConverters._
++import scala.jdk.CollectionConverters._
+ 
+ import io.fabric8.kubernetes.api.model.{HasMetadata, ServiceBuilder}
+ 
+-- 
+2.39.3 (Apple Git-145)
+
