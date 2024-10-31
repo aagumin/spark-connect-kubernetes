@@ -1,39 +1,11 @@
-From e1f51475d1e031f58d32bb6075f021c1260f10f4 Mon Sep 17 00:00:00 2001
-From: Puneet Gupta <puneet.gupta2@workday.com>
-Date: Mon, 3 Apr 2023 15:15:58 -0700
-Subject: [PATCH] Support for Istio with Strict MTLS
-
----
- .../spark/internal/config/package.scala       |   5 +
- .../org/apache/spark/deploy/k8s/Config.scala  |  31 ++++
- .../apache/spark/deploy/k8s/Constants.scala   |   4 +
- .../spark/deploy/k8s/KubernetesConf.scala     |   5 +
- .../spark/deploy/k8s/KubernetesUtils.scala    |  48 +++++-
- .../k8s/features/BasicDriverFeatureStep.scala |  16 +-
- .../features/BasicExecutorFeatureStep.scala   |   9 +-
- .../features/DriverServiceFeatureStep.scala   |   5 +-
- .../features/ExecutorServiceFeatureStep.scala |  86 ++++++++++
- .../cluster/k8s/ExecutorPodsAllocator.scala   |  20 ++-
- .../k8s/KubernetesExecutorBuilder.scala       |  10 +-
- .../spark/deploy/k8s/KubernetesTestConf.scala |   7 +-
- .../BasicDriverFeatureStepSuite.scala         |  28 ++++
- .../BasicExecutorFeatureStepSuite.scala       |  30 ++++
- .../DriverServiceFeatureStepSuite.scala       |   6 +-
- .../ExecutorServiceFeatureStepSuite.scala     | 147 ++++++++++++++++++
- .../k8s/KubernetesExecutorBuilderSuite.scala  |  23 +++
- .../src/main/dockerfiles/spark/entrypoint.sh  |  13 +-
- 18 files changed, 465 insertions(+), 28 deletions(-)
- create mode 100644 resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStep.scala
- create mode 100644 resource-managers/kubernetes/core/src/test/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStepSuite.scala
-
 diff --git a/core/src/main/scala/org/apache/spark/internal/config/package.scala b/core/src/main/scala/org/apache/spark/internal/config/package.scala
-index 7f93bf7621644..ced677df3fb92 100644
+index 125025d6a2fdf..69f59b789262c 100644
 --- a/core/src/main/scala/org/apache/spark/internal/config/package.scala
 +++ b/core/src/main/scala/org/apache/spark/internal/config/package.scala
-@@ -1061,6 +1061,11 @@ package object config {
+@@ -1079,6 +1079,11 @@ package object config {
      .version("2.1.0")
      .fallbackConf(DRIVER_HOST_ADDRESS)
-
+ 
 +  private[spark] val EXECUTOR_BIND_ADDRESS = ConfigBuilder("spark.executor.bindAddress")
 +    .doc("Address where to bind network listen sockets on the executor.")
 +    .stringConf
@@ -49,7 +21,7 @@ index 042e96827304a..04451594fb171 100644
 @@ -416,6 +416,35 @@ private[spark] object Config extends Logging {
        .stringConf
        .createOptional
-
+ 
 +  val KUBERNETES_PRE_START_SCRIPT =
 +    ConfigBuilder("spark.kubernetes.pre.start.script")
 +      .internal()
@@ -126,7 +98,7 @@ index d8cb881bf0826..9375f3b697bf0 100644
 @@ -190,6 +190,11 @@ private[spark] class KubernetesExecutorConf(
      KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf, KUBERNETES_EXECUTOR_ANNOTATION_PREFIX)
    }
-
+ 
 +  def serviceAnnotations: Map[String, String] = {
 +    KubernetesUtils.parsePrefixedKeyValuePairs(sparkConf,
 +      KUBERNETES_EXECUTOR_SERVICE_ANNOTATION_PREFIX)
@@ -140,9 +112,9 @@ index 0b9b1f85fb432..a22c07cd833d6 100644
 --- a/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/KubernetesUtils.scala
 +++ b/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/KubernetesUtils.scala
 @@ -23,7 +23,7 @@ import java.util.{Collections, UUID}
-
+ 
  import scala.collection.JavaConverters._
-
+ 
 -import io.fabric8.kubernetes.api.model.{Container, ContainerBuilder, ContainerStateRunning, ContainerStateTerminated, ContainerStateWaiting, ContainerStatus, EnvVar, EnvVarBuilder, EnvVarSourceBuilder, HasMetadata, OwnerReferenceBuilder, Pod, PodBuilder, Quantity}
 +import io.fabric8.kubernetes.api.model._
  import io.fabric8.kubernetes.client.KubernetesClient
@@ -161,7 +133,7 @@ index 0b9b1f85fb432..a22c07cd833d6 100644
 @@ -66,6 +67,49 @@ object KubernetesUtils extends Logging {
      sparkConf.getAllWithPrefix(prefix).toMap
    }
-
+ 
 +
 +  def verifyBindAddress (conf: KubernetesConf, key: String): Unit = {
 +    conf.getOption(key) match {
@@ -222,7 +194,7 @@ index 2b287ea856046..dbe91d71e34b5 100644
  import org.apache.spark.resource.ResourceProfile
 @@ -83,6 +84,7 @@ private[spark] class BasicDriverFeatureStep(conf: KubernetesDriverConf)
    private val driverMemoryWithOverheadMiB = driverMemoryMiB + memoryOverheadMiB
-
+ 
    override def configurePod(pod: SparkPod): SparkPod = {
 +    verifyBindAddress(conf, DRIVER_BIND_ADDRESS.key)
      val driverCustomEnvs = KubernetesUtils.buildEnvVars(
@@ -244,7 +216,7 @@ index 2b287ea856046..dbe91d71e34b5 100644
 @@ -139,6 +135,12 @@ private[spark] class BasicDriverFeatureStep(conf: KubernetesDriverConf)
          .endResources()
        .build()
-
+ 
 +    val containerWithBindAddress = getContainerWithBindAddressEnv(conf,
 +      DRIVER_BIND_ADDRESS.key, ENV_DRIVER_BIND_ADDRESS, driverContainer)
 +
@@ -257,11 +229,11 @@ index 2b287ea856046..dbe91d71e34b5 100644
 @@ -157,7 +159,7 @@ private[spark] class BasicDriverFeatureStep(conf: KubernetesDriverConf)
      conf.schedulerName
        .foreach(driverPod.getSpec.setSchedulerName)
-
+ 
 -    SparkPod(driverPod, driverContainer)
 +    SparkPod(driverPod, containerWithPrePostScriptsEnv)
    }
-
+ 
    override def getAdditionalPodSystemProperties(): Map[String, String] = {
 diff --git a/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/features/BasicExecutorFeatureStep.scala b/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/deploy/k8s/features/BasicExecutorFeatureStep.scala
 index 0b0bbc30ba41a..fe73201b49aee 100644
@@ -277,7 +249,7 @@ index 0b0bbc30ba41a..fe73201b49aee 100644
  import org.apache.spark.internal.config._
 @@ -100,6 +101,7 @@ private[spark] class BasicExecutorFeatureStep(
    }
-
+ 
    override def configurePod(pod: SparkPod): SparkPod = {
 +    verifyBindAddress(kubernetesConf, EXECUTOR_BIND_ADDRESS.key)
      val name = s"$executorPodNamePrefix-exec-${kubernetesConf.executorId}"
@@ -298,7 +270,7 @@ index 0b0bbc30ba41a..fe73201b49aee 100644
 @@ -288,6 +295,6 @@ private[spark] class BasicExecutorFeatureStep(
      kubernetesConf.schedulerName
        .foreach(executorPod.getSpec.setSchedulerName)
-
+ 
 -    SparkPod(executorPod, containerWithLifecycle)
 +    SparkPod(executorPod, containerWithPrePostScripts)
    }
@@ -314,11 +286,11 @@ index 37dfe8ec07a4c..cfc11cd2096aa 100644
 +import org.apache.spark.deploy.k8s.KubernetesUtils._
  import org.apache.spark.internal.{config, Logging}
  import org.apache.spark.util.{Clock, SystemClock}
-
+ 
 @@ -32,9 +33,7 @@ private[spark] class DriverServiceFeatureStep(
    extends KubernetesFeatureConfigStep with Logging {
    import DriverServiceFeatureStep._
-
+ 
 -  require(kubernetesConf.getOption(DRIVER_BIND_ADDRESS_KEY).isEmpty,
 -    s"$DRIVER_BIND_ADDRESS_KEY is not supported in Kubernetes mode, as the driver's bind " +
 -      "address is managed and set to the driver pod's IP address.")
@@ -419,10 +391,10 @@ index 0000000000000..d9e037a7a0b37
 +  val MAX_SERVICE_NAME_LENGTH = 63
 +}
 diff --git a/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/scheduler/cluster/k8s/ExecutorPodsAllocator.scala b/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/scheduler/cluster/k8s/ExecutorPodsAllocator.scala
-index 7174ba95927e7..f2ec4e647e49b 100644
+index 25970e918ec42..9fb1202997470 100644
 --- a/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/scheduler/cluster/k8s/ExecutorPodsAllocator.scala
 +++ b/resource-managers/kubernetes/core/src/main/scala/org/apache/spark/scheduler/cluster/k8s/ExecutorPodsAllocator.scala
-@@ -441,16 +441,20 @@ class ExecutorPodsAllocator(
+@@ -471,16 +471,20 @@ class ExecutorPodsAllocator(
        try {
          addOwnerReference(createdExecutorPod, resources)
          resources
@@ -458,7 +430,7 @@ index 67aad00f98543..328be41211a9a 100644
 @@ -65,8 +65,9 @@ private[spark] class KubernetesExecutorBuilder {
          }
        }
-
+ 
 -    val features = Seq(
 -      new BasicExecutorFeatureStep(conf, secMgr, resourceProfile),
 +    val features =
@@ -470,7 +442,7 @@ index 67aad00f98543..328be41211a9a 100644
 @@ -88,4 +89,9 @@ private[spark] class KubernetesExecutorBuilder {
      }
    }
-
+ 
 +  private def serviceFeatureStep(conf: KubernetesExecutorConf) = {
 +    if (conf.get(Config.KUBERNETES_EXECUTORS_SVC)) {
 +      Seq(new ExecutorServiceFeatureStep(conf))
@@ -512,7 +484,7 @@ index 9eb27a37fbabc..ad10822da387e 100644
 @@ -171,6 +171,34 @@ class BasicDriverFeatureStepSuite extends SparkFunSuite {
      }
    }
-
+ 
 +  test("test invalid bind address") {
 +    val baseConf = KubernetesTestConf.createDriverConf()
 +    baseConf.sparkConf.set(DRIVER_BIND_ADDRESS, "host")
@@ -551,7 +523,7 @@ index 32897014931cf..b01b2ef5dc855 100644
 @@ -120,6 +120,33 @@ class BasicExecutorFeatureStepSuite extends SparkFunSuite with BeforeAndAfter {
      assert(error.contains("You must specify an amount for gpu"))
    }
-
+ 
 +  test("test invalid bind address") {
 +    baseConf.set(EXECUTOR_BIND_ADDRESS, "host")
 +    val error = intercept[IllegalArgumentException] {
@@ -590,7 +562,7 @@ index 32897014931cf..b01b2ef5dc855 100644
 +      ENV_PRE_START_SCRIPT -> "",
 +      ENV_POST_STOP_SCRIPT -> "",
        ENV_EXECUTOR_POD_NAME -> null)
-
+ 
      val extraJavaOptsStart = additionalEnvVars.keys.count(_.startsWith(ENV_JAVA_OPT_PREFIX))
 diff --git a/resource-managers/kubernetes/core/src/test/scala/org/apache/spark/deploy/k8s/features/DriverServiceFeatureStepSuite.scala b/resource-managers/kubernetes/core/src/test/scala/org/apache/spark/deploy/k8s/features/DriverServiceFeatureStepSuite.scala
 index 609c80f27c3da..ecc426bc82171 100644
@@ -606,7 +578,7 @@ index 609c80f27c3da..ecc426bc82171 100644
 +      s"requirement failed: ${DriverServiceFeatureStep.DRIVER_BIND_ADDRESS_KEY} is " +
 +      s"not supported in Kubernetes mode, as the bind address can either be $ALL_IPS" +
 +      s" or the pod's IP address.")
-
+ 
      sparkConf.remove(DRIVER_BIND_ADDRESS)
      sparkConf.set(DRIVER_HOST_ADDRESS, "host")
 diff --git a/resource-managers/kubernetes/core/src/test/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStepSuite.scala b/resource-managers/kubernetes/core/src/test/scala/org/apache/spark/deploy/k8s/features/ExecutorServiceFeatureStepSuite.scala
@@ -768,10 +740,10 @@ index 17c2d4a938c14..53e20ce778432 100644
 +++ b/resource-managers/kubernetes/core/src/test/scala/org/apache/spark/scheduler/cluster/k8s/KubernetesExecutorBuilderSuite.scala
 @@ -17,6 +17,7 @@
  package org.apache.spark.scheduler.cluster.k8s
-
+ 
  import io.fabric8.kubernetes.client.KubernetesClient
 +import org.mockito.Mockito.mock
-
+ 
  import org.apache.spark.{SecurityManager, SparkConf}
  import org.apache.spark.deploy.k8s._
 @@ -61,6 +62,28 @@ class KubernetesExecutorBuilderSuite extends PodBuilderSuite {
@@ -801,7 +773,7 @@ index 17c2d4a938c14..53e20ce778432 100644
 +    verifyExecutorSvcCreation(conf, 1)
 +  }
  }
-
+ 
  /**
 diff --git a/resource-managers/kubernetes/docker/src/main/dockerfiles/spark/entrypoint.sh b/resource-managers/kubernetes/docker/src/main/dockerfiles/spark/entrypoint.sh
 index 42f4df88f3da9..24c908d03a4be 100755
@@ -818,7 +790,7 @@ index 42f4df88f3da9..24c908d03a4be 100755
 @@ -111,5 +112,15 @@ case "$1" in
      ;;
  esac
-
+ 
 +CMD_STRING="${CMD[@]}"
 +
 +if ! [ -z "${SPARK_PRE_START_SCRIPT}" ]; then

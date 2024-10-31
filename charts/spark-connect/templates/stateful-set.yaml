@@ -19,6 +19,9 @@ spec:
       labels:
         {{- include "spark.selectorLabels" . | nindent 8 }}
         spark-driver-affinity-id: {{ uuidv4 | quote }}
+        {{ if .Values.mtls.enabled}}
+        sidecar.istio.io/inject: "true"
+        {{- end }}
     spec:
       dnsConfig:
         options:

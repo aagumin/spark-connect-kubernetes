@@ -82,6 +82,15 @@ data:
     spark.kubernetes.executor.request.cores {{ .Values.spark.executor.requestCoresMilliCPU }}m
     spark.kubernetes.local.dirs.tmpfs false
     spark.kubernetes.namespace {{ .Release.Namespace }}
+    {{ if .Values.mtls.enabled }}
+    spark.kubernetes.executor.service true
+    spark.driver.bindAddress 0.0.0.0
+    spark.driver.port 7078
+    spark.blockManager.port 7079
+    spark.executor.bindAddress 0.0.0.0
+    spark.kubernetes.post.stop.script {{ .Values.mtls.poststopscript }}
+    spark.kubernetes.pre.start.script {{ .Values.mtls.prestartscript }}
+    {{- end }}
     {{- with .Values.spark.sparkConfig }}
     {{- range $key, $value := . }}
     {{ printf "%s %s" $key (toString $value) }}

@@ -12,6 +12,9 @@ data:
       name: spark-connect-kubernetes-executor
       labels:
         app.kubernetes.io/instance: {{ include "spark.name" . }}-executor
+        {{ if .Values.mtls.enabled }}
+        sidecar.istio.io/inject: "true"
+        {{- end }}
         spark-role: executor
         {{- with .Values.spark.executor.labels }}
         {{- toYaml . | nindent 16 }}
