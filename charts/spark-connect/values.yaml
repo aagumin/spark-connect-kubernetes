@@ -79,8 +79,8 @@ extraEnv: []
 
 mtls:
   enabled: false
-  pre.start.script: ""
-  post.stop.script: ""
+  prestartscript: ""
+  poststopscript: ""
 
 containerPorts:
   sparkUi: 4040

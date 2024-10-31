@@ -18,6 +18,13 @@
             <artifactId>celeborn-client-spark-3-shaded_2.12</artifactId>
             <version>0.5.1</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws -->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-aws</artifactId>
+            <version>3.3.4</version>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>
