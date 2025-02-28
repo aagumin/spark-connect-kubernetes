@@ -1,0 +1,21 @@
+<!-- kubectl create configmap spark-connect-hive &#45;&#45;from-file=config/hive-site.xml -n ${release_namespace} -->
+<configuration>
+    <property>
+        <name>hive.warehouse.dir</name>
+        <value>s3a://bucket/dir1/dir2</value>
+        <description>dupl</description>
+    </property>
+    <property>
+        <name>hive.metastore.uris</name>
+        <value>thrift://hms-hive-metastore.hms.svc.cluster.local:9083</value>
+        <description>Thrift uri for the remote metastore. Used by metastore client to connect to remote metastore
+        </description>
+    </property>
+    <property>
+      <!--  this should eventually be deprecated since the metastore should supply this -->
+      <name>hive.metastore.warehouse.dir</name>
+      <value>s3a://bucket/dir1/dir2</value>
+      <description>Data location</description>
+    </property>
+</configuration>
+
