@@ -13,8 +13,8 @@ Spark Connect is an application that allows you to perform data processing tasks
 - [X] Apache Spark >= 3.5
 - [X] Dynamic package installation
 - [X] Apache Celeborn support
-- [ ] Optional mTLS.
-- [ ] Istio support 
+- [X] Optional mTLS.
+- [X] Istio support 
 
 ## Requirements
 
