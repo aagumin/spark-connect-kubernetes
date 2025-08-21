@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ghrc.io/aagumin/spark-connect-kubernetes
+  repository: ghcr.io/aagumin/spark-connect-kubernetes
   tag: 1.0.0
   pullPolicy: Always
   imagePullSecrets: []
