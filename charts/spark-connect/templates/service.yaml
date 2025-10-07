@@ -10,6 +10,15 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  ports:
+    - name: tcp-connect-server
+      protocol: TCP
+      port: {{ .Values.containerPorts.sparkConnect }}
+      targetPort: {{ .Values.containerPorts.sparkConnect }}
+    - name: tcp-spark-ui
+      protocol: TCP
+      port: {{ .Values.containerPorts.sparkUi }}
+      targetPort: {{ .Values.containerPorts.sparkUi }}
   type: ClusterIP
   clusterIP: None
   sessionAffinity: ClientIP
