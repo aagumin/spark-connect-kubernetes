@@ -21,9 +21,7 @@ RUN set -ex; \
 
 WORKDIR $SPARK_HOME
 
-COPY mtls/spark-40909.patch .
-COPY celeborn/Celeborn-Optimize-Skew-Partitions-spark3_5_6.patch .
-COPY celeborn/Columnar-mypatch-356.patch .
+COPY assets/* .
 
 RUN patch -p1 < $SPARK_HOME/spark-40909.patch
 RUN patch -p1 < $SPARK_HOME/Columnar-mypatch-356.patch
