@@ -80,7 +80,7 @@ RUN mvn install
 
 RUN mvn dependency:copy-dependencies package
 
-COPY deps/requirements.txt .
+COPY ./deps/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
