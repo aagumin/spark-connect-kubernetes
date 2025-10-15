@@ -63,11 +63,9 @@ RUN cp ${SPARK_HOME}/kubernetes/dockerfiles/spark/entrypoint.sh /opt/entrypoint.
     cp ${SPARK_HOME}/kubernetes/dockerfiles/spark/decom.sh /opt/decom.sh; \
     chmod a+x /opt/decom.sh
 
-COPY scripts/wait_for_istio_sidecar.sh /opt/scripts/wait_for_istio_sidecar.sh
-RUN chmod +x /opt/scripts/wait_for_istio_sidecar.sh
-
-COPY scripts/stop_istio_sidecar.sh /opt/scripts/stop_istio_sidecar.sh
-RUN chmod +x /opt/scripts/stop_istio_sidecar.sh
+COPY scripts/* /opt/scripts/
+RUN chmod +x /opt/scripts/wait_for_istio_sidecar.sh && \
+    chmod +x /opt/scripts/stop_istio_sidecar.sh
 
 # switch to spark user
 
