@@ -1,7 +1,7 @@
 FROM eclipse-temurin:17 as builder
 
 ENV MAVEN_OPTS="-Xss64m -Xmx2g -XX:ReservedCodeCacheSize=1g"
-ENV SPARK_VERSION=3.5.3
+ENV SPARK_VERSION=3.5.6
 ENV SPARK_HOME=/opt/spark
 ENV SPARK_TGZ_URL=https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}.tgz
 
@@ -22,7 +22,12 @@ RUN set -ex; \
 WORKDIR $SPARK_HOME
 
 COPY mtls/spark-40909.patch .
+#COPY celeborn/Celeborn-Optimize-Skew-Partitions-spark3_5_6.patch .
+COPY celeborn/Celeborn_Columnar_Shuffle_spark3.patch .
+
 RUN patch -p1 < $SPARK_HOME/spark-40909.patch
+RUN patch -p1 < $SPARK_HOME/Celeborn_Columnar_Shuffle_spark3.patch
+#RUN patch -p1 < $SPARK_HOME/Celeborn-Optimize-Skew-Partitions-spark3_5_6.patch
 
 RUN ./dev/make-distribution.sh \
       --name spark-mtls \

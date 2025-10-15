@@ -1,5 +1,5 @@
 {{- $shouldCreateServiceAccount := .Values.serviceAccount.create -}}
-{{- $resourceList := list "pods" "services" "configmaps" -}}
+{{- $resourceList := list "pods" "services" "configmaps" "persistentvolumeclaims" -}}
 {{- $verbList := list "*" -}}
 
 {{- if $shouldCreateServiceAccount }}

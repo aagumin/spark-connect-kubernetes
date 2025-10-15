@@ -10,19 +10,19 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-connect_2.12</artifactId>
-            <version>3.5.2</version>
+            <version>3.5.6</version>
           </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.celeborn/celeborn-client-spark-3-shaded -->
         <dependency>
             <groupId>org.apache.celeborn</groupId>
             <artifactId>celeborn-client-spark-3-shaded_2.12</artifactId>
-            <version>0.5.1</version>
+            <version>0.6.1</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws -->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-aws</artifactId>
-            <version>3.3.4</version>
+            <version>3.4.2</version>
         </dependency>
 
     </dependencies>
