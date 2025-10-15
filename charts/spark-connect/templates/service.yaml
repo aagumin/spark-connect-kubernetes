@@ -20,8 +20,11 @@ spec:
       port: {{ .Values.containerPorts.sparkUi }}
       targetPort: {{ .Values.containerPorts.sparkUi }}
   type: ClusterIP
-  clusterIP: None
   sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+
   selector:
     {{- include "spark.selectorLabels" . | nindent 4 }}
 {{- end }}

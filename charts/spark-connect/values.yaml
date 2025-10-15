@@ -27,7 +27,6 @@ spark:
     cores: 2
     memoryMiB: 2048
     memoryOverheadMiB: 384
-    ephemeralLocalVolume: {}
     affinity: {}
     tolerations: []
 
@@ -36,7 +35,6 @@ spark:
     requestCoresMilliCPU: 4000
     memoryMiB: 20480
     memoryOverheadMiB: 5120
-    ephemeralLocalVolume: {}
     minExecutors: 1
     maxExecutors: 10
     affinity: {}

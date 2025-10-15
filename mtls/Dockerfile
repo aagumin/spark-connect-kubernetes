@@ -22,12 +22,12 @@ RUN set -ex; \
 WORKDIR $SPARK_HOME
 
 COPY mtls/spark-40909.patch .
-#COPY celeborn/Celeborn-Optimize-Skew-Partitions-spark3_5_6.patch .
-COPY celeborn/Celeborn_Columnar_Shuffle_spark3.patch .
+COPY celeborn/Celeborn-Optimize-Skew-Partitions-spark3_5_6.patch .
+COPY celeborn/Columnar-mypatch-356.patch .
 
 RUN patch -p1 < $SPARK_HOME/spark-40909.patch
-RUN patch -p1 < $SPARK_HOME/Celeborn_Columnar_Shuffle_spark3.patch
-#RUN patch -p1 < $SPARK_HOME/Celeborn-Optimize-Skew-Partitions-spark3_5_6.patch
+RUN patch -p1 < $SPARK_HOME/Columnar-mypatch-356.patch
+RUN patch -p1 < $SPARK_HOME/Celeborn-Optimize-Skew-Partitions-spark3_5_6.patch
 
 RUN ./dev/make-distribution.sh \
       --name spark-mtls \
@@ -80,10 +80,8 @@ RUN mvn install
 
 RUN mvn dependency:copy-dependencies package
 
-USER spark
-WORKDIR /home/spark
-
 COPY docker/requirements.txt .
-RUN pip install  -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
+USER spark

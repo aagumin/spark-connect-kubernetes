@@ -9,7 +9,8 @@ data:
     spark.connect.grpc.binding.port {{ .Values.containerPorts.sparkConnect }}
     spark.decommission.enabled true
     spark.driver.cores {{ .Values.spark.driver.cores }}
-    spark.driver.extraJavaOptions -XX:+ExitOnOutOfMemoryError -XX:+UseCompressedOops -XX:+UseG1GC
+    spark.driver.extraJavaOptions -XX:+ExitOnOutOfMemoryError -XX:+UseCompressedOops -XX:+UseZGC
+    spark.executor.extraJavaOptions -XX:+UseZGC
     spark.driver.host ${SPARK_DRIVER_HOST}
     spark.driver.memory {{ .Values.spark.driver.memoryMiB }}m
     spark.driver.memoryOverhead {{ .Values.spark.driver.memoryOverheadMiB }}m
