@@ -72,7 +72,7 @@ RUN chmod +x /opt/scripts/stop_istio_sidecar.sh
 # switch to spark user
 
 WORKDIR /opt
-COPY deps/pom.xml .
+COPY deps/* .
 
 RUN mvn validate
 
@@ -80,7 +80,6 @@ RUN mvn install
 
 RUN mvn dependency:copy-dependencies package
 
-COPY ./deps/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
