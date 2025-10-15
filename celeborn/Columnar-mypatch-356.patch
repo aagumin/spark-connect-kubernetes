@@ -1,0 +1,24 @@
+diff --git a/core/src/main/scala/org/apache/spark/Dependency.scala b/core/src/main/scala/org/apache/spark/Dependency.scala
+index fbb92b4b4e2..a4580d94456 100644
+--- a/core/src/main/scala/org/apache/spark/Dependency.scala
++++ b/core/src/main/scala/org/apache/spark/Dependency.scala
+@@ -82,6 +82,7 @@ class ShuffleDependency[K: ClassTag, V: ClassTag, C: ClassTag](
+     val keyOrdering: Option[Ordering[K]] = None,
+     val aggregator: Option[Aggregator[K, V, C]] = None,
+     val mapSideCombine: Boolean = false,
++    var schema: AnyRef = null,
+     val shuffleWriterProcessor: ShuffleWriteProcessor = new ShuffleWriteProcessor)
+   extends Dependency[Product2[K, V]] with Logging {
+ 
+diff --git a/sql/core/src/main/scala/org/apache/spark/sql/execution/exchange/ShuffleExchangeExec.scala b/sql/core/src/main/scala/org/apache/spark/sql/execution/exchange/ShuffleExchangeExec.scala
+index 91f2099ce2d..2f71f8b8c57 100644
+--- a/sql/core/src/main/scala/org/apache/spark/sql/execution/exchange/ShuffleExchangeExec.scala
++++ b/sql/core/src/main/scala/org/apache/spark/sql/execution/exchange/ShuffleExchangeExec.scala
+@@ -402,6 +402,7 @@ object ShuffleExchangeExec {
+         rddWithPartitionIds,
+         new PartitionIdPassthrough(part.numPartitions),
+         serializer,
++        schema = DataTypeUtils.fromAttributes(outputAttributes),
+         shuffleWriterProcessor = createShuffleWriteProcessor(writeMetrics))
+ 
+     dependency

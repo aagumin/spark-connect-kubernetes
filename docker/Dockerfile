@@ -1,4 +1,4 @@
-FROM spark:3.5.2-python3
+FROM spark:3.5.6-python3
 
 USER 0
 RUN  apt-get update -y && \
