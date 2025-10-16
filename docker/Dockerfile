@@ -21,7 +21,9 @@ RUN set -ex; \
 
 WORKDIR $SPARK_HOME
 
-COPY assets/* .
+COPY assets/spark-40909.patch .
+COPY assets/Celeborn-Optimize-Skew-Partitions-spark3_5_6.patch .
+COPY assets/Columnar-mypatch-356.patch .
 
 RUN patch -p1 < $SPARK_HOME/spark-40909.patch
 RUN patch -p1 < $SPARK_HOME/Columnar-mypatch-356.patch
